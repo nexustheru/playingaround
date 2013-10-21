@@ -10,7 +10,6 @@
 #include <QFileInfo>
 #include <bsa.h>
 
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -29,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionDelete_selected,SIGNAL(triggered()),this,SLOT(del()));
     connect(ui->actionClear_all_selection_in_lists,SIGNAL(triggered()),this,SLOT(clearsele()));
     connect(ui->treeWidget,SIGNAL(doubleClicked(QModelIndex)),this,SLOT(settex()));
+    connect(ui->treeWidget_2,SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),this,SLOT(unpackselecteddata()));
     time.start(10);
     scene=new myscene();
      ui->graphicsView->setScene(scene);
@@ -136,9 +136,12 @@ QString inttoqs(unsigned long value)
 
 void MainWindow::bsafile(string filename)
 {
+
     try
     {
      open_bsa(filename.c_str(),ui->treeWidget_2);
+
+
     }
     catch(...)
     {
@@ -162,7 +165,7 @@ void MainWindow::nifilesave(string filename)
     for(int i=0;i < co;i++)
     {
         QGraphicsItem* ite=scene->items()[i];
-        qDebug("ite->.toStdString().c_str()");
+
 
     }
 
@@ -277,6 +280,28 @@ void MainWindow::setdoom()
     rec(root.toElement());
 
     //xroot = xroot.nextSibling();
+
+}
+
+void MainWindow::unpackselecteddata()
+{
+    qDebug()<< QString::number(ui->treeWidget_2->topLevelItemCount()).toStdString().c_str() << " files in bsaview";
+    qDebug()<< QString::number(test.size()).toStdString().c_str() << " files in bsa array";
+    for(int i=0 ;i < ui->treeWidget_2->topLevelItemCount();i++)
+    {
+
+        if(ui->treeWidget_2->isItemSelected(ui->treeWidget_2->topLevelItem(i))==true)
+        {
+
+                string filen=ui->treeWidget_2->topLevelItem(i)->text(0).toStdString();
+
+                SaveFile(filen.c_str(),test[i]->size,test[i]->data);
+
+        }
+    }
+
+
+   qDebug("file saved");
 
 }
 

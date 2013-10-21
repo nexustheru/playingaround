@@ -12,9 +12,18 @@
 #include <map>
 #include <zlib.h>
 #include <direct.h>
+#include <QVector>
 typedef unsigned long DWORD;
 typedef unsigned char BYTE;
 typedef unsigned short WORD;
+
+struct datastruct
+{
+   BYTE* data;
+   DWORD size;
+};
+
+static QVector<datastruct*> test;
 
 //================================================
 void CreatePath( const char *path )
@@ -37,7 +46,7 @@ void CreatePath( const char *path )
 }
 
 //================================================
-bool SaveFile( const char *fname, int size, BYTE * data )
+static bool SaveFile( const char *fname, int size, BYTE * data )
 {
         FILE   *f;
 
@@ -144,6 +153,7 @@ typedef struct {
 
 void open_bsa(const char* filename,QTreeWidget* we)
 {
+    test.clear();
     QStringList items;
     items << "No" << "Yes";
     QString itemg = QInputDialog::getItem(0,"QInputDialog::getItem()",
@@ -215,6 +225,7 @@ std::string s =
     "data\\" + dirs[i].dirname + "\\" + ( *ii ).second;
 QTreeWidgetItem* item=new QTreeWidgetItem();
 item->setText(0,QString::fromStdString(s.c_str()));
+
 we->insertTopLevelItem(0,item);
 //printf( "%8x %8x %s\n", rec.off, rec.size, s.c_str(  ) );
 BYTE   *data = new BYTE[rec.size];
@@ -236,20 +247,26 @@ BYTE   *data = new BYTE[rec.size];
                                             {
                                                     printf( "Error unpack at %8x %s\n",
                                                             rec.off, s.c_str(  ) );
-                                            } else
+                                            }
+                                            else
+
                                                     SaveFile( s.c_str(  ), unpsize, unpdata );
                                             delete[]unpdata;
-                                    } else
+                                    }
+                                    else
                                     {
                                             SaveFile( s.c_str(  ), 0, data );
+
                                     }
-                            } else
+                            }
+                            else
                             {
                                     if ( rec.size >= 6 && data[4] == 0x78 && data[5] == 0x9c )
 
                                            qDebug ( "Error: possibly packed at %8x %s\n",
                                                     rec.off, s.c_str(  ) );
                                     SaveFile( s.c_str(  ), rec.size, data );
+
                             }
                             delete[]data;
 
@@ -262,6 +279,7 @@ fclose( f );
     {
         bsa_hdr_t hdr;
   FILE   *f = fopen(filename, "rb" );
+
   fread( &hdr, sizeof( hdr ), 1, f );
   std::vector < bsa_root_record_t > root;
   root.resize( hdr.numdirs );
@@ -321,11 +339,67 @@ fclose( f );
   }
   std::string s =
       "data\\" + dirs[i].dirname + "\\" + ( *ii ).second;
+
   QTreeWidgetItem* item=new QTreeWidgetItem();
   item->setText(0,QString::fromStdString(s.c_str()));
+
   we->insertTopLevelItem(0,item);
-    }
+
+  //printf( "%8x %8x %s\n", rec.off, rec.size, s.c_str(  ) );
+  BYTE   *data = new BYTE[rec.size];
+
+                              fseek( f, rec.off, 0 );
+                              fread( data, rec.size, 1, f );
+                              if ( hdr.hz1 & 4 )
+                              {
+                                      int     psize = rec.size - 4;
+                                      DWORD   unpsize = *( int * ) ( data );
+
+                                      if ( unpsize )
+                                      {
+                                              BYTE   *unpdata = new BYTE[unpsize];
+                                              int t = uncompress( unpdata, &unpsize, data + 4, psize );
+                                                      datastruct* strud;
+                                                      strud=new datastruct();
+                                                      strud->data=unpdata;
+                                                      strud->size=unpsize;
+                                                      test.append(strud);
+
+                                                      //SaveFile( s.c_str(  ), unpsize, unpdata );
+                                              delete[]unpdata;
+
+                                      }
+                                      else
+                                      {
+                                              //SaveFile( s.c_str(  ), 0, data );
+                                          datastruct* stru;
+                                          stru=new datastruct();
+                                          stru->data=data;
+                                          stru->size=0;
+                                          test.append(stru);
+
+                                      }
+                              }
+                              else
+                              {
+                                      if ( rec.size >= 6 && data[4] == 0x78 && data[5] == 0x9c )
+
+                                             qDebug ( "Error: possibly packed at %8x %s\n",
+                                                      rec.off, s.c_str(  ) );
+                                      //SaveFile( s.c_str(  ), rec.size, data );
+                                      datastruct* struf;
+                                      struf=new datastruct();
+                                      struf->data=data;
+                                      struf->size=rec.size;
+                                      test.append(struf);
+
+                              }
+                              delete[]data;
+
+
   }
+  }
+  fclose( f );
     }
 }
 #endif // BSA_H

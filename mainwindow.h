@@ -66,6 +66,7 @@ public slots:
     void del(void);
     void clearsele(void);
     void setdoom(void);
+    void unpackselecteddata(void);
 signals:
 
 private:
